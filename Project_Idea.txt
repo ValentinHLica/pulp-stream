@@ -1,0 +1,7 @@
+TODO:
+1. Refactor
+2. Main page Popular Downloads
+
+
+Extra New ideas:
+Krijo nje db ku store rekomendime per njerzit ose psh filmat 
