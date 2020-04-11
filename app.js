@@ -12,6 +12,16 @@ app.use(express.json());
 app.use(cookieParser());
 connectDB();
 
+// Cors
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
+
 // Routes
 const getMovie = require("./router/getMovie");
 const mainPage = require("./router/mainPage");
