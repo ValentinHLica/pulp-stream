@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const BookmarkSchema = new mongoose.Schema({
-  id: {
+  movieCode: {
     type: Number,
     required: [true, "Bookmarked Movie needs to have id"],
     unique: true,
