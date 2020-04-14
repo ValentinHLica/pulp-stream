@@ -5,10 +5,31 @@ const Bookmark = require("../models/bookmark");
 // @access     Private
 exports.getBookmarks = async (req, res, next) => {
   try {
-    const data = await Bookmark.find({ user: req.user.id });
+    let query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const total = await Bookmark.countDocuments({ user: req.user._id });
+    const paggination = { limit, count: total };
+
+    if (startIndex > 0) {
+      paggination.prevPage = page - 1;
+    }
+
+    if (total > endIndex) {
+      paggination.nextPage = page + 1;
+    }
+
+    query = Bookmark.find({ user: req.user.id });
+
+    query = query.skip(startIndex).limit(limit);
+
+    const data = await query;
 
     res.status(200).json({
       success: true,
+      paggination,
       data,
     });
   } catch (error) {
