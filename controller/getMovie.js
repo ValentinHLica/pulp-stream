@@ -1,5 +1,4 @@
 const request = require("request");
-const cheerio = require("cheerio");
 
 // @desc       Get Movie
 // @route      GET /movie/:id

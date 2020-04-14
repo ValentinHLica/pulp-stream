@@ -21,6 +21,19 @@ exports.getBookmarks = async (req, res, next) => {
 // @access     Private
 exports.postBookmark = async (req, res, next) => {
   try {
+    const user = await Bookmark.findOne({
+      user: req.user._id,
+      movieCode: req.body.movieCode,
+    });
+
+    if (user) {
+      return next({
+        name: "CostumError",
+        message: "Movie is Bookmarked",
+        statusCode: 403,
+      });
+    }
+
     const data = await Bookmark.create(req.body);
 
     res.status(200).json({
@@ -32,12 +45,40 @@ exports.postBookmark = async (req, res, next) => {
   }
 };
 
+// @desc       Check if Movie is Bookmarked
+// @route      POST /bookmark/check
+// @access     Private
+exports.bookmarkCheck = async (req, res, next) => {
+  try {
+    const user = await Bookmark.findOne({
+      user: req.user._id,
+      movieCode: req.body.movieCode,
+    });
+
+    let data = false;
+
+    if (user) {
+      data = true;
+    }
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc       DELETE Bookmarked Movie
-// @route      DELETE /bookmark/:id
+// @route      DELETE /bookmark/delete
 // @access     Private
 exports.deleteBookmark = async (req, res, next) => {
   try {
-    const data = await Bookmark.findById(req.params.id);
+    const data = await Bookmark.findOne({
+      user: req.user._id,
+      movieCode: req.body.movieCode,
+    });
 
     if (!data) {
       return next({

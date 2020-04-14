@@ -6,6 +6,7 @@ const { protect } = require("../middleware/auth");
 
 // Bookmark Controller
 const {
+  bookmarkCheck,
   getBookmarks,
   postBookmark,
   deleteBookmark,
@@ -13,6 +14,7 @@ const {
 
 router.get("/", protect, getBookmarks);
 router.post("/", protect, postBookmark);
-router.delete("/:id", protect, deleteBookmark);
+router.post("/check", protect, bookmarkCheck);
+router.post("/delete", protect, deleteBookmark);
 
 module.exports = router;
