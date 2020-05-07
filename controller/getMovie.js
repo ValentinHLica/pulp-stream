@@ -1,4 +1,4 @@
-const request = require("request");
+const axios = require("axios");
 
 // @desc       Get Movie
 // @route      GET /movie/:id
@@ -7,28 +7,22 @@ exports.getMovie = async (req, res, next) => {
   try {
     let data = {};
 
-    const getYTSMovie = () => {
-      return new Promise((resolve) => {
-        request.get(
-          `https://yts.mx/api/v2/movie_details.json?movie_id=${req.params.id}&with_images=true&with_cast=true`,
-          (err, response, html) => {
-            if (!err && response.statusCode == 200) {
-              const movie = JSON.parse(response.body);
-              if (movie.data.movie) {
-                data = {
-                  stream:
-                    "https://api.hdv.fun/embed/" + movie.data.movie.imdb_code,
-                  ...movie.data.movie,
-                };
-              }
-            }
-            resolve();
-          }
-        );
-      });
-    };
+    const movie = await axios.get(
+      `${process.env.URL}/movie_details.json?movie_id=${req.params.id}&with_images=true&with_cast=true`
+    );
 
-    await getYTSMovie();
+    if (movie.data.data.movie.id !== 0) {
+      data = {
+        stream: "https://api.hdv.fun/embed/" + movie.data.data.movie.imdb_code,
+        ...movie.data.data.movie,
+      };
+    } else {
+      return next({
+        name: "CostumError",
+        message: "Movie does not exist",
+        statusCode: 404,
+      });
+    }
 
     res.status(200).json({
       success: true,

@@ -1,4 +1,4 @@
-const request = require("request");
+const axios = require("axios");
 
 // @desc       Search Movies
 // @route      GET /search
@@ -19,49 +19,42 @@ exports.searchMoveis = async (req, res, next) => {
 
     const paggination = { limit };
 
-    const search = () => {
-      return new Promise((resolve) => {
-        request.get(
-          `https://yts.mx/api/v2/list_movies.json?page=${page}&quality=${quality}&minimum_rating=${rating}&query_term=${query}&genre=${genre}&sort_by=${sort}&limit=${limit}`,
-          (err, response, html) => {
-            if (!err && response.statusCode == 200) {
-              const movies = JSON.parse(response.body);
+    const movies = await axios.get(
+      `${process.env.URL}/list_movies.json?page=${page}&quality=${quality}&minimum_rating=${rating}&query_term=${query}&genre=${genre}&sort_by=${sort}&limit=${limit}`
+    );
 
-              if (movies.data.movies) {
-                const total = movies.data.movie_count;
-                paggination.count = total;
+    if (movies.data.data.movie_count !== 0) {
+      const total = movies.data.data.movie_count;
+      paggination.count = total;
 
-                if (startIndex > 0) {
-                  paggination.prevPage = page - 1;
-                }
+      if (startIndex > 0) {
+        paggination.prevPage = page - 1;
+      }
 
-                if (total > endIndex) {
-                  paggination.nextPage = page + 1;
-                }
+      if (total > endIndex) {
+        paggination.nextPage = page + 1;
+      }
 
-                movies.data.movies.forEach((e, index) => {
-                  const movie = {
-                    id: e.id,
-                    title: e.title_english,
-                    year: e.year,
-                    rating: e.rating,
-                    genres: e.genres,
-                    language: e.language,
-                    medium_cover_image: e.medium_cover_image,
-                  };
+      movies.data.data.movies.forEach((e, index) => {
+        const movie = {
+          id: e.id,
+          title: e.title_english,
+          year: e.year,
+          rating: e.rating,
+          genres: e.genres,
+          language: e.language,
+          medium_cover_image: e.medium_cover_image,
+        };
 
-                  data.push(movie);
-                });
-              }
-            }
-
-            resolve();
-          }
-        );
+        data.push(movie);
       });
-    };
-
-    await search();
+    } else {
+      return next({
+        name: "CostumError",
+        message: "Nothing was found",
+        statusCode: 404,
+      });
+    }
 
     res.status(200).json({
       success: true,

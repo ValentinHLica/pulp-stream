@@ -1,4 +1,22 @@
 const User = require("../models/user");
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto");
+
+const sendToken = (res, statusCode, user) => {
+  const token = user.getSignedToken();
+
+  const options = {
+    expires: new Date(
+      Date.now() + process.env.COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+
+  res.status(statusCode).cookie("token", token, options).json({
+    success: true,
+    token,
+  });
+};
 
 // @desc       Register User
 // @route      POST /auth/register
@@ -54,18 +72,136 @@ exports.login = async (req, res, next) => {
   }
 };
 
-const sendToken = (res, statusCode, user) => {
-  const token = user.getSignedToken();
+// @desc       Forgot Password
+// @route      POST /auth/forgotpassword
+// @access     Public
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
 
-  const options = {
-    expires: new Date(
-      Date.now() + process.env.COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-  };
+    if (!user) {
+      return next({
+        name: "CostumError",
+        message: "User does not exist",
+        statusCode: 400,
+      });
+    }
 
-  res.status(statusCode).cookie("token", token, options).json({
-    success: true,
-    token,
-  });
+    const forgotPasswordToken = user.forgotPasswordMethod();
+    await user.save({ validateBeforeSave: false });
+
+    await sendEmail({
+      email: req.body.email,
+      subject: "Reset Password",
+      text: `https://bashvtini.github.io/pulp-ui/#/forgotpassword/${forgotPasswordToken}`,
+    });
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc       Reset Password
+// @route      PUT /auth/resetpassword/:resettoken
+// @access     Public
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.resettoken)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gte: Date.now() },
+    });
+
+    if (!user) {
+      return next({
+        name: "CostumError",
+        message: "Invalide Token",
+        statusCode: 400,
+      });
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    sendToken(res, 200, user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc       Get User Details
+// @route      GET /auth/user
+// @access     Private
+exports.getUserDetail = async (req, res, next) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: req.user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc       Edit User Details
+// @route      PUT /auth/user/detail
+// @access     Private
+exports.updateUserDetails = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { username: req.body.username, email: req.body.email },
+      { runValidators: true, new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc       Change Password
+// @route      PUT /auth/changepassword
+// @access     Private
+exports.changePassword = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("+password");
+
+    const matchPassword = await user.matchPassword(req.body.currentPassword);
+
+    if (!matchPassword) {
+      return next({
+        name: "CostumError",
+        message: "Wrong Password",
+        statusCode: 401,
+      });
+    }
+
+    if (req.body.newPassword.length <= 6) {
+      return next({
+        name: "CostumError",
+        message: "Please provide a password longer than 6 characters",
+        statusCode: 400,
+      });
+    }
+
+    user.password = req.body.newPassword;
+    user.save();
+
+    sendToken(res, 200, user);
+  } catch (error) {
+    next(error);
+  }
 };

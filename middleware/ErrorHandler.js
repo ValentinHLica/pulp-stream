@@ -1,6 +1,5 @@
 module.exports = (err, req, res, next) => {
   let message, statusCode;
-// console.log(err)
 
   if (err.name === "CostumError") {
     message = err.message;
