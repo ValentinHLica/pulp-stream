@@ -93,7 +93,7 @@ exports.forgotPassword = async (req, res, next) => {
     await sendEmail({
       email: req.body.email,
       subject: "Reset Password",
-      text: `https://bashvtini.github.io/pulp-ui/#/forgotpassword/${forgotPasswordToken}`,
+      text: `https://bashvtini.github.io/pulp-ui/#/resetpassword/${forgotPasswordToken}`,
     });
 
     res.status(200).json({
@@ -133,6 +133,37 @@ exports.resetPassword = async (req, res, next) => {
     await user.save();
 
     sendToken(res, 200, user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc       Check Reset Password Token
+// @route      PUT /auth/checkresetpassword/:resettoken
+// @access     Public
+exports.checkResetPasswordToken = async (req, res, next) => {
+  try {
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.resettoken)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gte: Date.now() },
+    });
+
+    if (!user) {
+      return next({
+        name: "CostumError",
+        message: "Invalide Token",
+        statusCode: 400,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+    });
   } catch (error) {
     next(error);
   }

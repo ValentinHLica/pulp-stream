@@ -5,8 +5,8 @@ const Cors = require("./middleware/cors");
 const cookieParser = require("cookie-parser");
 
 // Dev Only
-// const dotenv = require("dotenv");
-// dotenv.config({ path: "./config/config.env" });
+const dotenv = require("dotenv");
+ dotenv.config({ path: "./config/config.env" });
 //
 
 const PORT = process.env.PORT || 5000;
