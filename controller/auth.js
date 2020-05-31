@@ -93,7 +93,19 @@ exports.forgotPassword = async (req, res, next) => {
     await sendEmail({
       email: req.body.email,
       subject: "Reset Password",
-      text: `https://bashvtini.github.io/pulp-ui/#/resetpassword/${forgotPasswordToken}`,
+      text: `
+      Click the url below to reset password:
+      https://bashvtini.github.io/pulp-ui/#/resetpassword/${forgotPasswordToken} 
+      `,
+      html: `
+      <div>
+        <h2 style="text-align: center;">Pulp Stream</h2>
+        <p style="margin:20px auto;text-align: center;">Click the below button to change password</p>
+        <div style="padding:20px;display:flex;flex-direction: column;">
+          <a id="reset" style="padding: 10px 20px;color: white;text-decoration: none;font-size: 1.1em;background-color: #3499e0;margin:auto" href="https://bashvtini.github.io/pulp-ui/#/resetpassword/${forgotPasswordToken}">Reset Password</a>
+        </div>
+      </div>
+      `,
     });
 
     res.status(200).json({
